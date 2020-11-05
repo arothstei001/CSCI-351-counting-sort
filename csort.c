@@ -27,6 +27,7 @@ double const ts = omp_get_wtime();
     count[in[i]]++;
   }
 
+
 double const te = omp_get_wtime();
 printf("elasped time1: %lf\n", te-ts);
 
@@ -39,12 +40,16 @@ printf("elasped time1: %lf\n", te-ts);
 
 double const ts2 = omp_get_wtime();
 
-
+#pragma omp parallel for num_threads(2)
   for (unsigned i = 0; i < n; i++) {
-    #pragma omp parallel num_threads(2)
+    #pragma omp critical
+{
     out[count[in[i]]] = in[i];
     count[in[i]]++;
+}
   }
+
+
 
 double const te2 = omp_get_wtime();
 printf("elasped time2: %lf\n", te2-ts2);
