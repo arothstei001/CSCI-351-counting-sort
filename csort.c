@@ -7,6 +7,8 @@
 /* strtol */
 #include <stdio.h>
 
+#include <omp.h>
+
 static int
 csort(unsigned const k,
       unsigned const n,
@@ -17,10 +19,16 @@ csort(unsigned const k,
   if (NULL == count) {
     return -1;
   }
+double const ts = omp_get_wtime();
 
+#pragma omp parallel for num_threads(2)
   for (unsigned i = 0; i < n; i++) {
+    #pragma omp atomic
     count[in[i]]++;
   }
+
+double const te = omp_get_wtime();
+printf("elasped time1: %lf\n", te-ts);
 
   unsigned total = 0;
   for (unsigned i = 0; i <= k; i++) {
@@ -29,10 +37,17 @@ csort(unsigned const k,
     total += counti;
   }
 
+double const ts2 = omp_get_wtime();
+
+
   for (unsigned i = 0; i < n; i++) {
+    #pragma omp parallel num_threads(2)
     out[count[in[i]]] = in[i];
     count[in[i]]++;
   }
+
+double const te2 = omp_get_wtime();
+printf("elasped time2: %lf\n", te2-ts2);
 
   free(count);
 
