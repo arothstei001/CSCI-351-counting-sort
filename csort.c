@@ -1,13 +1,14 @@
 /* assert */
 #include <assert.h>
 
+/* OpenMP API */
+#include <omp.h>
+
 /* EXIT_SUCCESS, rand */
 #include <stdlib.h>
 
 /* strtol */
 #include <stdio.h>
-
-#include <omp.h>
 
 static int
 csort(unsigned const k,
@@ -15,44 +16,45 @@ csort(unsigned const k,
       unsigned const * const in,
       unsigned       * const out)
 {
-  unsigned * const count = calloc(k + 1, sizeof(*count));
+  int num_threads;
+
+# pragma omp parallel
+  num_threads = omp_get_num_threads();
+
+  unsigned * const count = calloc(num_threads * k + 1 * num_threads, sizeof(*count));
   if (NULL == count) {
     return -1;
   }
-double const ts = omp_get_wtime();
 
-#pragma omp parallel for num_threads(2)
+  double ts1 = omp_get_wtime();
+# pragma omp parallel for
   for (unsigned i = 0; i < n; i++) {
-    #pragma omp atomic
-    count[in[i]]++;
+    count[in[i] * num_threads + omp_get_thread_num()]++;
   }
+  double te1 = omp_get_wtime();
+  //printf("timer 1: %lf\n", te1 - ts1);
 
-
-double const te = omp_get_wtime();
-printf("elasped time1: %lf\n", te-ts);
-
+  double ts2 = omp_get_wtime();
   unsigned total = 0;
-  for (unsigned i = 0; i <= k; i++) {
-    unsigned const counti = count[i];
-    count[i] = total;
-    total += counti;
+  for (unsigned i = 0; i <= num_threads * k + 1; i+=num_threads) {
+    for(unsigned j = 0; j<num_threads; j++){
+      unsigned const counti = count[i+j];
+      count[i+j] = total;
+      total += counti;
+   }
   }
+  double te2 = omp_get_wtime();
+  //printf("timer 2: %lf\n", te2 - ts2);
 
-double const ts2 = omp_get_wtime();
-
-#pragma omp parallel for num_threads(2)
+  double ts3 = omp_get_wtime();
+# pragma omp parallel for
   for (unsigned i = 0; i < n; i++) {
-    #pragma omp critical
-{
-    out[count[in[i]]] = in[i];
-    count[in[i]]++;
-}
+    out[count[in[i] * num_threads + omp_get_thread_num()]] = in[i];
+    count[in[i] * num_threads + omp_get_thread_num()]++;
   }
-
-
-
-double const te2 = omp_get_wtime();
-printf("elasped time2: %lf\n", te2-ts2);
+  double te3 = omp_get_wtime();
+  //printf("timer 3: %lf\n", te3 - ts3);
+  printf("time: %lf\n", te3 - ts1);
 
   free(count);
 
