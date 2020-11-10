@@ -61,8 +61,7 @@ csort(unsigned const k,
   return 0;
 }
 
-int
-main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
   /* Get array size from command line */
   unsigned n = strtol(argv[1], NULL, 10);
 
